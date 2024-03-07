@@ -147,7 +147,7 @@ def main(data_dir_path = "/home/jupyter/",
 
     print("Setting up transforms to apply to image data...")
     transforms = v2.Compose([
-    v2.ToImagePIL(),  # Convert to tensor, only needed if you had a PIL image
+    v2.ToImage(),  # Convert to tensor, only needed if you had a PIL image
     v2.ToDtype(torch.uint8),  # optional, most input are already uint8 at this point
     v2.ToTensor(),
     v2.RandomApply(transforms=[v2.RandomResizedCrop(size=(32, 32), scale = (0.9,0.9),antialias = True),
@@ -211,15 +211,7 @@ def main(data_dir_path = "/home/jupyter/",
             
             print("Constructing model...")
             model = nn.Sequential(
-            nn.Conv2d(3, channel_1, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(channel_1, channel_2, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
-            Flatten(),
-            # three layers of 64 rectified linear units per Bird, Lotfi (2023)
-            nn.Linear(channel_2 * 32 * 32, 64),
+            nn.Linear(2048, 64),
             nn.ReLU(),
             nn.Linear(64,64),
             nn.ReLU(),
@@ -227,37 +219,19 @@ def main(data_dir_path = "/home/jupyter/",
             
             wandb.init(
             # set the wandb project where this run will be logged
-            project="autoencoder_augmented_runs_v3",
+            project="autoencoder_augmented_runs",
             # track hyperparameters and run metadata
             config={
             "learning_rate": rate,
             "l2reg": l2reg,
-            "epochs": 3,
+            "epochs": 5,
             "optimizier": "ADAM"}
             )
             optimizer = optim.Adam(model.parameters(),
                                    lr = rate,
                                    weight_decay = l2reg)
-            train_part34(model, autoencoder, optimizer, device, train_loader, val_loader, epochs=3) 
+            train_part34(model, autoencoder, optimizer, device, train_loader, val_loader, epochs=5) 
             wandb.finish()
-    
-    from googleapiclient import discovery
-    from oauth2client.client import GoogleCredentials
-
-    credentials = GoogleCredentials.get_application_default()
-
-    service = discovery.build('compute', 'v1', credentials=credentials)
-
-    # Project ID for this request.
-    project = 'cse599-proj-ai-img-detection'  # Project ID
-    # The name of the zone for this request.
-    zone = 'us-west4-a'  # Zone information
-
-    # Name of the instance resource to stop.
-    instance = 'deeplearning-1-vm'  # instance id
-
-    request = service.instances().stop(project=project, zone=zone, instance=instance)
-    response = request.execute()
-    
+            
 if __name__ == "__main__":
     main()
